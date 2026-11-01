@@ -216,6 +216,11 @@ body {
   color: var(--text-muted);
   font-family: var(--font-mono);
 }
+.tor-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .btn-rotate-tor {
   display: flex;
   align-items: center;
@@ -234,6 +239,75 @@ body {
   background: rgba(168, 85, 247, 0.3);
   border-color: var(--purple);
   box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
+}
+
+.btn-inject-tor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-inject-tor:hover {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: var(--emerald);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+.guide-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.guide-step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 243, 255, 0.15);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.step-content strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+}
+.step-content p {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+.tor-modal-status-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-subtle);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
 }
 
 /* Gateway Status Card */

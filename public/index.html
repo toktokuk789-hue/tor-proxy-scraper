@@ -47,10 +47,19 @@
             <span class="tor-ip-val" id="torCurrentIp">Scanning local circuit...</span>
           </div>
         </div>
-        <button class="btn-rotate-tor" id="btnRotateTor" title="Request new Tor Identity (SIGNAL NEWNYM)">
-          <i data-lucide="refresh-cw" id="rotateIcon"></i>
-          <span>New Identity</span>
-        </button>
+        <div class="tor-actions-group">
+          <button class="btn-rotate-tor" id="btnRotateTor" title="Request new Tor Identity (SIGNAL NEWNYM)">
+            <i data-lucide="refresh-cw" id="rotateIcon"></i>
+            <span>New Identity</span>
+          </button>
+          <button class="btn-inject-tor" id="btnInjectTor" title="Add Tor SOCKS5 to Proxy Pool as an Elite Rotating Proxy">
+            <i data-lucide="plus"></i>
+            <span>Inject to Pool</span>
+          </button>
+          <button class="btn-icon" id="btnTorHelp" title="Tor Setup & Connection Help">
+            <i data-lucide="help-circle"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Rotator Gateway Status -->
@@ -396,6 +405,57 @@
             <i data-lucide="upload"></i>
             <span>Parse & Ingest</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Tor Connection Guide -->
+    <div class="modal-overlay" id="torGuideModal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3><i data-lucide="shield" class="text-purple"></i> Tor Connection & Routing Setup</h3>
+          <button class="btn-close-modal" id="btnCloseTorGuide"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-sub">Tor Pulse integrates directly with the Tor network through Tor Browser or local Tor daemons:</p>
+          
+          <div class="guide-steps-list">
+            <div class="guide-step-card">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <strong>Start Tor Browser</strong>
+                <p>Launch Tor Browser on your computer. When open, Tor automatically starts an encrypted SOCKS5 proxy on <code>127.0.0.1:9150</code>.</p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <strong>Instant Auto-Detection</strong>
+                <p>Tor Pulse probes every few seconds and will glow green (<span class="text-emerald">Tor Connected</span>). You don't need to change any settings!</p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <strong>Infinite Rotating Proxy</strong>
+                <p>Click <strong>"Inject to Pool"</strong> to use Tor as an Elite rotating proxy, or enable <strong>"Scrape via Tor Circuit"</strong> to hide your identity completely while harvesting proxies.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="tor-modal-status-box" id="modalTorStatusBox">
+            <span class="status-dot" id="modalTorDot"></span>
+            <span id="modalTorText">Checking Tor SOCKS5 ports (9150 / 9050)...</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btnCheckTorNow">
+            <i data-lucide="refresh-cw"></i>
+            <span>Test Tor Connection</span>
+          </button>
+          <button class="btn btn-primary" id="btnDoneTorGuide">Got it</button>
         </div>
       </div>
     </div>

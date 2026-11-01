@@ -88,6 +88,16 @@ const el = {
   customInput: document.getElementById('customInput'),
   btnSubmitCustom: document.getElementById('btnSubmitCustom'),
 
+  // Tor Extras
+  btnInjectTor: document.getElementById('btnInjectTor'),
+  btnTorHelp: document.getElementById('btnTorHelp'),
+  torGuideModal: document.getElementById('torGuideModal'),
+  btnCloseTorGuide: document.getElementById('btnCloseTorGuide'),
+  btnDoneTorGuide: document.getElementById('btnDoneTorGuide'),
+  btnCheckTorNow: document.getElementById('btnCheckTorNow'),
+  modalTorDot: document.getElementById('modalTorDot'),
+  modalTorText: document.getElementById('modalTorText'),
+
   toastContainer: document.getElementById('toastContainer')
 };
 
@@ -223,12 +233,23 @@ function updateTorUI(tor) {
     el.torPortBadge.style.color = '#10b981';
     el.torCurrentIp.textContent = `Exit IP: ${tor.currentIp || 'Connected'}`;
     el.chkUseTor.disabled = false;
+    if (el.btnInjectTor) el.btnInjectTor.disabled = false;
+
+    if (el.modalTorDot) el.modalTorDot.style.background = '#10b981';
+    if (el.modalTorText) el.modalTorText.textContent = `Connected! ${tor.mode} active on port ${tor.socksPort} (Exit IP: ${tor.currentIp || 'Active'})`;
   } else {
     el.torDot.className = 'tor-indicator-dot';
     el.torStatusTitle.textContent = 'Tor Offline';
-    el.torPortBadge.textContent = 'NO CIRCIUT';
+    el.torPortBadge.textContent = 'NO CIRCUIT';
     el.torPortBadge.style.color = '#94a3b8';
-    el.torCurrentIp.textContent = 'Tor Browser closed (Click to retry)';
+    el.torCurrentIp.textContent = 'Tor Browser closed (Click help to connect)';
+    if (el.chkUseTor.checked) {
+      el.chkUseTor.checked = false;
+    }
+    if (el.btnInjectTor) el.btnInjectTor.disabled = true;
+
+    if (el.modalTorDot) el.modalTorDot.style.background = '#f43f5e';
+    if (el.modalTorText) el.modalTorText.textContent = 'Tor is offline. Please launch Tor Browser on your PC.';
   }
 }
 
@@ -433,19 +454,90 @@ function setCheckingState(active) {
 function attachEventListeners() {
   // Harvest Proxies Button
   el.btnScrape.addEventListener('click', async () => {
+    if (el.chkUseTor.checked && !state.tor.connected) {
+      showToast('Tor is not active! Start Tor Browser or uncheck "Scrape via Tor".', 'error');
+      el.torGuideModal.classList.add('active');
+      return;
+    }
+
     setScrapingState(true);
-    showToast('Starting proxy harvest across feeds...');
+    showToast(el.chkUseTor.checked ? 'Harvesting proxies through Tor Circuit...' : 'Starting proxy harvest across feeds...');
     try {
-      await fetch('/api/scrape', {
+      const res = await fetch('/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ useTor: el.chkUseTor.checked })
       });
+      const data = await res.json();
+      if (!res.ok) {
+        setScrapingState(false);
+        showToast(data.error || 'Scraper failed to start', 'error');
+      }
     } catch (err) {
       setScrapingState(false);
       showToast('Scraper failed to start', 'error');
     }
   });
+
+  // Toggle Tor Checkbox validation
+  el.chkUseTor.addEventListener('change', () => {
+    if (el.chkUseTor.checked && !state.tor.connected) {
+      el.chkUseTor.checked = false;
+      showToast('Tor is offline. Please launch Tor Browser first.', 'error');
+      el.torGuideModal.classList.add('active');
+    }
+  });
+
+  // Tor Inject Button
+  if (el.btnInjectTor) {
+    el.btnInjectTor.addEventListener('click', async () => {
+      if (!state.tor.connected) {
+        showToast('Please open Tor Browser first', 'error');
+        el.torGuideModal.classList.add('active');
+        return;
+      }
+      try {
+        const res = await fetch('/api/tor/inject', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          fetchProxies();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (e) {
+        showToast('Failed to inject Tor proxy', 'error');
+      }
+    });
+  }
+
+  // Tor Guide Modal triggers
+  if (el.btnTorHelp) {
+    el.btnTorHelp.addEventListener('click', () => el.torGuideModal.classList.add('active'));
+  }
+  if (el.btnCloseTorGuide) {
+    el.btnCloseTorGuide.addEventListener('click', () => el.torGuideModal.classList.remove('active'));
+  }
+  if (el.btnDoneTorGuide) {
+    el.btnDoneTorGuide.addEventListener('click', () => el.torGuideModal.classList.remove('active'));
+  }
+  if (el.btnCheckTorNow) {
+    el.btnCheckTorNow.addEventListener('click', async () => {
+      showToast('Testing Tor SOCKS5 ports (9150 / 9050)...');
+      try {
+        const res = await fetch('/api/tor/status');
+        const data = await res.json();
+        updateTorUI(data);
+        if (data.connected) {
+          showToast(`✓ Tor Connected! Exit IP: ${data.currentIp}`, 'success');
+        } else {
+          showToast('Tor ports 9150/9050 not responding. Is Tor Browser open?', 'error');
+        }
+      } catch (e) {
+        showToast('Error testing Tor connection', 'error');
+      }
+    });
+  }
 
   // Run Health Check Button
   el.btnHealthCheck.addEventListener('click', async () => {

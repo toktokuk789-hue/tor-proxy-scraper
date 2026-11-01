@@ -274,6 +274,17 @@ app.post('/api/tor/rotate', async (req, res) => {
   res.json({ ...result, state });
 });
 
+app.post('/api/tor/inject', (req, res) => {
+  const result = torManager.injectTorProxy();
+  if (result.success) {
+    logEvent(`[TOR] ✓ ${result.message}`);
+    broadcastSSE('stats', proxyPool.getStats());
+  } else {
+    logEvent(`[TOR] ⚠️ ${result.message}`, 'error');
+  }
+  res.json(result);
+});
+
 // Rotator Gateway Control
 app.post('/api/rotator/toggle', (req, res) => {
   const { enable, port = 8899, strategy = 'round-robin' } = req.body;

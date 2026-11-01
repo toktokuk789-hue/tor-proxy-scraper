@@ -7,7 +7,6 @@ class Scraper {
   constructor() {
     this.isScraping = false;
     this.ipPortRegex = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):([0-9]{2,5})\b/g;
-    this.ipOnlyRegex = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
   }
 
   isPrivateIp(ip) {
@@ -25,7 +24,6 @@ class Scraper {
     let match;
     this.ipPortRegex.lastIndex = 0;
 
-    // Check if format is IP:PORT
     while ((match = this.ipPortRegex.exec(rawText)) !== null) {
       const full = match[0];
       const [ip, portStr] = full.split(':');
@@ -42,23 +40,6 @@ class Scraper {
       }
     }
 
-    // Special case for Tor Exit list (list of IPs where default port is 9001/9050 or exit proxy 443/80/8080)
-    if (list.length === 0 && defaultProtocol === 'TOR_EXIT') {
-      const ipMatches = rawText.match(this.ipOnlyRegex) || [];
-      for (const ip of ipMatches) {
-        if (!this.isPrivateIp(ip)) {
-          list.push({
-            ip,
-            port: 9050, // default tor socks
-            protocol: 'SOCKS5',
-            source: 'Tor Exit Node',
-            status: 'unchecked',
-            anonymity: 'Elite'
-          });
-        }
-      }
-    }
-
     return list;
   }
 
@@ -66,21 +47,28 @@ class Scraper {
   async scrapeSource(source, useTor = false, onLog = () => {}) {
     try {
       const config = {
-        timeout: 12000,
+        timeout: 14000,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
         }
       };
 
-      if (useTor && torManager.isConnected) {
+      if (useTor) {
+        if (!torManager.isConnected) {
+          onLog(`[TOR] ⚠️ Tor Browser / Tor daemon is not running on 127.0.0.1:9150. Cannot route via Tor for ${source.name}.`);
+          return { source: source.name, found: 0, added: 0, error: 'Tor offline' };
+        }
+
         const agent = torManager.getAgent();
         if (agent) {
           config.httpAgent = agent;
           config.httpsAgent = agent;
+          config.proxy = false; // Prevent Axios from ignoring the SOCKS agent
+          onLog(`[TOR] 🧅 Fetching ${source.name} via Tor Circuit (${torManager.currentTorIp || 'Active'})...`);
         }
+      } else {
+        onLog(`[SCRAPER] Fetching: ${source.name} (${source.type})...`);
       }
-
-      onLog(`[SCRAPER] Fetching: ${source.name} (${source.type})${useTor ? ' via Tor' : ''}...`);
 
       const res = await axios.get(source.url, config);
       const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
@@ -96,7 +84,7 @@ class Scraper {
     }
   }
 
-  // Scrape all sources concurrently with concurrency limit
+  // Scrape all sources concurrently
   async scrapeAll({ useTor = false, customSources = [], onLog = () => {}, onProgress = () => {} } = {}) {
     if (this.isScraping) {
       return { success: false, message: 'Scraping is already in progress' };
@@ -108,9 +96,27 @@ class Scraper {
     let totalFound = 0;
     let totalAdded = 0;
 
-    onLog(`[SCRAPER] ⚡ Initiating Proxy Harvest across ${allFeeds.length} channels...`);
+    // Check Tor status before starting
+    if (useTor) {
+      await torManager.checkStatus();
+      if (!torManager.isConnected) {
+        onLog('[TOR] ❌ Tor is NOT connected! Tor Browser is not running on port 9150/9050.');
+        onLog('[TOR] 💡 Start Tor Browser on your PC, then click "Harvest Proxies" again.');
+        this.isScraping = false;
+        return {
+          success: false,
+          error: 'Tor is offline. Please launch Tor Browser first.',
+          totalFound: 0,
+          totalAdded: 0
+        };
+      } else {
+        onLog(`[TOR] 🌟 Connected to ${torManager.getState().mode} on port ${torManager.activeSocksPort}. Exit IP: ${torManager.currentTorIp}`);
+      }
+    }
 
-    const limit = 4; // parallel feed downloads
+    onLog(`[SCRAPER] ⚡ Initiating Proxy Harvest across ${allFeeds.length} channels${useTor ? ' via Tor' : ''}...`);
+
+    const limit = useTor ? 2 : 4; // Lower concurrency for Tor circuits to avoid bandwidth saturation
     for (let i = 0; i < allFeeds.length; i += limit) {
       const chunk = allFeeds.slice(i, i + limit);
       const chunkResults = await Promise.all(
@@ -129,6 +135,12 @@ class Scraper {
         totalFound,
         totalAdded
       });
+
+      // Optionally rotate Tor circuit after every 6 sources
+      if (useTor && i > 0 && i % 6 === 0) {
+        onLog('[TOR] Rotating Tor identity for fresh scrape circuit...');
+        await torManager.rotateCircuit();
+      }
     }
 
     this.isScraping = false;
@@ -142,7 +154,7 @@ class Scraper {
     };
   }
 
-  // Scrape raw text or URL directly
+  // Scrape raw text or custom URL
   async scrapeCustom(input, type = 'HTTP', onLog = () => {}) {
     if (input.startsWith('http://') || input.startsWith('https://')) {
       return this.scrapeSource({ url: input, type, name: 'Custom URL' }, false, onLog);

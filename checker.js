@@ -50,6 +50,7 @@ class Checker {
       const response = await axios.get(testUrl, {
         httpAgent: agent,
         httpsAgent: agent,
+        proxy: false,
         timeout,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36'
