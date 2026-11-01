@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  tor-pulse:
+    build: .
+    container_name: tor-pulse-bot
+    restart: unless-stopped
+    ports:
+      - "3000:3000"   # Web Dashboard UI & REST API
+      - "8899:8899"   # Rotating Proxy Gateway
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000

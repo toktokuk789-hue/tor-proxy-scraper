@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOR PULSE — Cybernetic Proxy Scraper & Health Rotator</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow glow-cyan"></div>
+  <div class="ambient-glow glow-purple"></div>
+  <div class="ambient-glow glow-emerald"></div>
+
+  <div class="app-layout">
+    <!-- Top Navigation Header -->
+    <header class="header-bar">
+      <div class="brand">
+        <div class="brand-icon-wrapper">
+          <i data-lucide="shield-check" class="brand-icon"></i>
+          <span class="pulse-ring"></span>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">
+            <span class="gradient-text">TOR PULSE</span>
+            <span class="version-tag">v2.5 PRO</span>
+          </div>
+          <div class="brand-subtitle">Autonomous Tor Rotating Proxy Scraper & Health Suite</div>
+        </div>
+      </div>
+
+      <!-- Tor Circuit Status Indicator -->
+      <div class="tor-status-card" id="torCard">
+        <div class="tor-indicator-dot" id="torDot"></div>
+        <div class="tor-info">
+          <div class="tor-label-row">
+            <span class="tor-status-title" id="torStatusTitle">Checking Tor...</span>
+            <span class="tor-badge" id="torPortBadge">PORT 9150</span>
+          </div>
+          <div class="tor-ip-row">
+            <span class="tor-ip-val" id="torCurrentIp">Scanning local circuit...</span>
+          </div>
+        </div>
+        <button class="btn-rotate-tor" id="btnRotateTor" title="Request new Tor Identity (SIGNAL NEWNYM)">
+          <i data-lucide="refresh-cw" id="rotateIcon"></i>
+          <span>New Identity</span>
+        </button>
+      </div>
+
+      <!-- Rotator Gateway Status -->
+      <div class="gateway-status-card">
+        <div class="gateway-icon-box">
+          <i data-lucide="repeat" class="gateway-icon"></i>
+        </div>
+        <div class="gateway-info">
+          <div class="gateway-label">Rotating Proxy Gateway</div>
+          <div class="gateway-value" id="gatewayEndpoint">127.0.0.1:8899</div>
+        </div>
+        <button class="btn-icon" id="btnCopyGateway" title="Copy Gateway URL">
+          <i data-lucide="copy"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Metrics Telemetry Grid -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">TOTAL HARVESTED</span>
+          <div class="metric-icon-box text-cyan"><i data-lucide="layers"></i></div>
+        </div>
+        <div class="metric-value" id="statTotal">0</div>
+        <div class="metric-subtext">Total proxies in buffer</div>
+      </div>
+
+      <div class="metric-card active-card">
+        <div class="metric-header">
+          <span class="metric-title">VERIFIED ALIVE</span>
+          <div class="metric-icon-box text-emerald"><i data-lucide="check-circle-2"></i></div>
+        </div>
+        <div class="metric-value text-emerald" id="statAlive">0</div>
+        <div class="metric-subtext" id="statSuccessRate">0% Healthy & Verified</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">AUTO-PURGED DEAD</span>
+          <div class="metric-icon-box text-rose"><i data-lucide="trash-2"></i></div>
+        </div>
+        <div class="metric-value text-rose" id="statPurged">0</div>
+        <div class="metric-subtext">Dead & slow proxies dropped</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">AVG LATENCY</span>
+          <div class="metric-icon-box text-amber"><i data-lucide="zap"></i></div>
+        </div>
+        <div class="metric-value text-amber" id="statLatency">0 ms</div>
+        <div class="metric-subtext">Verified round-trip speed</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">GATEWAY HITS</span>
+          <div class="metric-icon-box text-purple"><i data-lucide="activity"></i></div>
+        </div>
+        <div class="metric-value text-purple" id="statHits">0</div>
+        <div class="metric-subtext" id="statHitsSub">Requests routed locally</div>
+      </div>
+    </section>
+
+    <!-- Command & Control Deck -->
+    <section class="control-panel">
+      <!-- Action Buttons Row -->
+      <div class="actions-bar">
+        <div class="primary-actions">
+          <button class="btn btn-primary btn-glow" id="btnScrape">
+            <i data-lucide="download-cloud" class="btn-icon-spin"></i>
+            <span>Harvest Proxies</span>
+          </button>
+
+          <button class="btn btn-emerald" id="btnHealthCheck">
+            <i data-lucide="stethoscope"></i>
+            <span>Run Health Check</span>
+          </button>
+
+          <button class="btn btn-outline" id="btnStopCheck" style="display: none;">
+            <i data-lucide="square"></i>
+            <span>Stop Scan</span>
+          </button>
+
+          <button class="btn btn-outline text-rose" id="btnPurgeDead">
+            <i data-lucide="filter-x"></i>
+            <span>Purge Dead</span>
+          </button>
+        </div>
+
+        <div class="secondary-actions">
+          <button class="btn btn-outline" id="btnExportModal">
+            <i data-lucide="share-2"></i>
+            <span>Export</span>
+          </button>
+
+          <button class="btn btn-outline" id="btnCustomModal">
+            <i data-lucide="plus-circle"></i>
+            <span>Import / Paste</span>
+          </button>
+
+          <button class="btn btn-icon-only" id="btnClearPool" title="Clear All Proxies">
+            <i data-lucide="trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Settings & Fine-Tuning Drawer -->
+      <div class="tuning-drawer">
+        <!-- Tor Tunnel Option -->
+        <label class="toggle-control" title="Route scraper requests through local Tor circuit">
+          <input type="checkbox" id="chkUseTor">
+          <span class="toggle-slider"></span>
+          <span class="toggle-label"><i data-lucide="globe"></i> Scrape via Tor Circuit</span>
+        </label>
+
+        <!-- Auto Purge Option -->
+        <label class="toggle-control" title="Automatically drop dead or unreachable proxies immediately during check">
+          <input type="checkbox" id="chkAutoPurge" checked>
+          <span class="toggle-slider"></span>
+          <span class="toggle-label"><i data-lucide="trash-2"></i> Auto-Drop Dead</span>
+        </label>
+
+        <!-- Concurrency Slider -->
+        <div class="control-group">
+          <span class="control-label">Concurrency: <strong id="valConcurrency">50</strong></span>
+          <input type="range" id="rngConcurrency" min="10" max="150" value="50" class="custom-range">
+        </div>
+
+        <!-- Latency Cutoff Slider -->
+        <div class="control-group">
+          <span class="control-label">Max Latency: <strong id="valMaxLatency">2500</strong>ms</span>
+          <input type="range" id="rngMaxLatency" min="300" max="5000" step="100" value="2500" class="custom-range">
+        </div>
+
+        <!-- Target Endpoint Selector -->
+        <div class="control-group">
+          <span class="control-label">Test Target:</span>
+          <select id="selTestTarget" class="custom-select">
+            <option value="https://httpbin.org/ip">HTTPBin (Anonymity Test)</option>
+            <option value="https://1.1.1.1/cdn-cgi/trace">Cloudflare CDN</option>
+            <option value="https://www.google.com/generate_204">Google Ping</option>
+            <option value="https://api.binance.com/api/v3/ping">Binance API</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Live Progress Bar -->
+      <div class="progress-bar-container" id="progressBarContainer" style="display: none;">
+        <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+        <div class="progress-bar-text" id="progressBarText">Scanning: 0 / 0 (0% complete)</div>
+      </div>
+    </section>
+
+    <!-- Main Content Area: Filterable Data Table + Live Terminal -->
+    <main class="main-content-layout">
+      <!-- Left Column: Data Grid & Filters -->
+      <section class="table-section">
+        <!-- Filter and Search Toolbar -->
+        <div class="table-toolbar">
+          <div class="filter-pills" id="protocolFilter">
+            <button class="pill active" data-protocol="ALL">All (<span id="countAll">0</span>)</button>
+            <button class="pill" data-protocol="SOCKS5">SOCKS5 (<span id="countSocks5">0</span>)</button>
+            <button class="pill" data-protocol="SOCKS4">SOCKS4 (<span id="countSocks4">0</span>)</button>
+            <button class="pill" data-protocol="HTTPS">HTTPS (<span id="countHttps">0</span>)</button>
+            <button class="pill" data-protocol="HTTP">HTTP (<span id="countHttp">0</span>)</button>
+          </div>
+
+          <div class="search-and-status">
+            <div class="status-filter-pills">
+              <button class="sub-pill active" data-status="ALL">All Status</button>
+              <button class="sub-pill text-emerald" data-status="alive">Alive</button>
+              <button class="sub-pill text-amber" data-status="unchecked">Unchecked</button>
+            </div>
+
+            <div class="search-box">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="searchInput" placeholder="Filter by IP, Country, ASN, Port...">
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-responsive">
+          <table class="data-table" id="proxyTable">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>IP Address & Port</th>
+                <th>Protocol</th>
+                <th>Anonymity</th>
+                <th>Location / ISP</th>
+                <th>Speed / Latency</th>
+                <th>Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="proxyTableBody">
+              <tr class="empty-row">
+                <td colspan="8">
+                  <div class="empty-state">
+                    <i data-lucide="radar" class="empty-icon pulse-anim"></i>
+                    <h3>Proxy Pool Buffer Empty</h3>
+                    <p>Click <strong>Harvest Proxies</strong> to fetch thousands of fresh rotating proxies across Tor and high-speed channels.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-bar">
+          <div class="pagination-info" id="paginationInfo">Showing 0 of 0 proxies</div>
+          <div class="pagination-buttons">
+            <button class="btn-page" id="btnPrevPage" disabled><i data-lucide="chevron-left"></i></button>
+            <span class="page-indicator" id="pageIndicator">Page 1 of 1</span>
+            <button class="btn-page" id="btnNextPage" disabled><i data-lucide="chevron-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Live Telemetry Terminal & Gateway Quick-Use -->
+      <aside class="sidebar-section">
+        <!-- Live Terminal -->
+        <div class="terminal-panel">
+          <div class="terminal-header">
+            <div class="terminal-title">
+              <span class="terminal-dot green"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot red"></span>
+              <span>LIVE TELEMETRY CONSOLE</span>
+            </div>
+            <button class="btn-icon-tiny" id="btnClearTerminal" title="Clear Logs">
+              <i data-lucide="eraser"></i>
+            </button>
+          </div>
+          <div class="terminal-body" id="terminalLogs">
+            <div class="log-line text-cyan">[SYSTEM] Tor Pulse Core initialised and ready.</div>
+            <div class="log-line">[ROTATOR] Local rotating gateway listening at 127.0.0.1:8899</div>
+          </div>
+        </div>
+
+        <!-- Tor Instructions & Status Card -->
+        <div class="card-glass tor-guide-card">
+          <div class="card-glass-header">
+            <i data-lucide="shield" class="text-purple"></i>
+            <h4>Tor Browser Quick Guide</h4>
+          </div>
+          <p class="guide-text">
+            To route through Tor Browser, simply open <strong>Tor Browser</strong> on your PC. It will automatically bind to port <strong>9150</strong>. Tor Pulse will auto-detect it in real time!
+          </p>
+          <div class="guide-feature-list">
+            <div class="feature-item"><i data-lucide="check" class="text-emerald"></i> IP Rotating via SIGNAL NEWNYM</div>
+            <div class="feature-item"><i data-lucide="check" class="text-emerald"></i> Onion proxy source extraction</div>
+            <div class="feature-item"><i data-lucide="check" class="text-emerald"></i> Bypass cloudflare scraper rate-limits</div>
+          </div>
+        </div>
+
+        <!-- Developer API & Rotator Snippet -->
+        <div class="card-glass api-snippet-card">
+          <div class="card-glass-header">
+            <i data-lucide="code" class="text-cyan"></i>
+            <h4>Use in Python / Curl</h4>
+          </div>
+          <div class="code-snippet-box">
+            <code>curl -x http://127.0.0.1:8899 https://api.ipify.org</code>
+            <button class="btn-copy-snippet" id="btnCopyCurl" title="Copy snippet"><i data-lucide="copy"></i></button>
+          </div>
+          <div class="code-snippet-box">
+            <code>proxies={'https': 'http://127.0.0.1:8899'}</code>
+            <button class="btn-copy-snippet" id="btnCopyPy" title="Copy snippet"><i data-lucide="copy"></i></button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Modal: Export Proxies -->
+    <div class="modal-overlay" id="exportModal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3><i data-lucide="share-2" class="text-cyan"></i> Export Proxies</h3>
+          <button class="btn-close-modal" id="btnCloseExport"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-options-row">
+            <label class="radio-chip">
+              <input type="radio" name="exportFormat" value="raw" checked>
+              <span>IP:PORT (Raw)</span>
+            </label>
+            <label class="radio-chip">
+              <input type="radio" name="exportFormat" value="url">
+              <span>protocol://IP:PORT</span>
+            </label>
+            <label class="radio-chip">
+              <input type="radio" name="exportFormat" value="json">
+              <span>JSON (Metadata)</span>
+            </label>
+            <label class="radio-chip">
+              <input type="radio" name="exportFormat" value="csv">
+              <span>CSV Spreadsheet</span>
+            </label>
+          </div>
+
+          <div class="filter-checkbox-row">
+            <label class="toggle-control">
+              <input type="checkbox" id="chkExportAliveOnly" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Only Verified Alive Proxies</span>
+            </label>
+          </div>
+
+          <textarea class="export-preview" id="exportPreview" readonly placeholder="Generating preview..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btnCopyExport">
+            <i data-lucide="clipboard"></i>
+            <span>Copy to Clipboard</span>
+          </button>
+          <button class="btn btn-primary" id="btnDownloadExport">
+            <i data-lucide="download"></i>
+            <span>Download File</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Custom Import -->
+    <div class="modal-overlay" id="customModal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3><i data-lucide="plus-circle" class="text-emerald"></i> Import Custom Proxies or URL</h3>
+          <button class="btn-close-modal" id="btnCloseCustom"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-sub">Paste raw IP:Port lists, HTML, or any public proxy list URL to extract instantly:</p>
+          <textarea class="custom-import-textarea" id="customInput" placeholder="Example:&#10;198.51.100.1:8080&#10;203.0.113.5:1080&#10;or https://example.com/proxies.txt"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="btnCancelCustom">Cancel</button>
+          <button class="btn btn-emerald" id="btnSubmitCustom">
+            <i data-lucide="upload"></i>
+            <span>Parse & Ingest</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
