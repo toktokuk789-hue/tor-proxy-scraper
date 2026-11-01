@@ -221,6 +221,25 @@ body {
   align-items: center;
   gap: 8px;
 }
+.btn-launch-tor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 243, 255, 0.15);
+  border: 1px solid rgba(0, 243, 255, 0.35);
+  color: var(--cyan);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-launch-tor:hover {
+  background: rgba(0, 243, 255, 0.3);
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0, 243, 255, 0.35);
+}
 .btn-rotate-tor {
   display: flex;
   align-items: center;

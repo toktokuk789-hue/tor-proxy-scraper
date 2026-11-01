@@ -48,6 +48,10 @@
           </div>
         </div>
         <div class="tor-actions-group">
+          <button class="btn-launch-tor" id="btnLaunchTor" title="Open Tor Browser on your PC">
+            <i data-lucide="play"></i>
+            <span>Launch Tor</span>
+          </button>
           <button class="btn-rotate-tor" id="btnRotateTor" title="Request new Tor Identity (SIGNAL NEWNYM)">
             <i data-lucide="refresh-cw" id="rotateIcon"></i>
             <span>New Identity</span>
@@ -451,11 +455,15 @@
           </div>
         </div>
         <div class="modal-footer">
+          <button class="btn btn-primary" id="btnLaunchTorFromModal">
+            <i data-lucide="play"></i>
+            <span>Open Tor Browser</span>
+          </button>
           <button class="btn btn-outline" id="btnCheckTorNow">
             <i data-lucide="refresh-cw"></i>
-            <span>Test Tor Connection</span>
+            <span>Test Connection</span>
           </button>
-          <button class="btn btn-primary" id="btnDoneTorGuide">Got it</button>
+          <button class="btn btn-outline" id="btnDoneTorGuide">Done</button>
         </div>
       </div>
     </div>

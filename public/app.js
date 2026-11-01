@@ -89,6 +89,8 @@ const el = {
   btnSubmitCustom: document.getElementById('btnSubmitCustom'),
 
   // Tor Extras
+  btnLaunchTor: document.getElementById('btnLaunchTor'),
+  btnLaunchTorFromModal: document.getElementById('btnLaunchTorFromModal'),
   btnInjectTor: document.getElementById('btnInjectTor'),
   btnTorHelp: document.getElementById('btnTorHelp'),
   torGuideModal: document.getElementById('torGuideModal'),
@@ -538,6 +540,38 @@ function attachEventListeners() {
       }
     });
   }
+
+  // Launch Tor Handlers
+  const handleLaunchTor = async () => {
+    showToast('🚀 Launching Tor Browser...', 'info');
+    try {
+      const res = await fetch('/api/tor/launch', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        // Poll for Tor connection every 2.5s for 20s
+        let attempts = 0;
+        const pollTimer = setInterval(async () => {
+          attempts++;
+          const statusRes = await fetch('/api/tor/status');
+          const statusData = await statusRes.json();
+          updateTorUI(statusData);
+          if (statusData.connected) {
+            clearInterval(pollTimer);
+            showToast(`✓ Tor Connected! Exit IP: ${statusData.currentIp}`, 'success');
+          }
+          if (attempts >= 8) clearInterval(pollTimer);
+        }, 2500);
+      } else {
+        showToast(data.message, 'error');
+      }
+    } catch (e) {
+      showToast('Failed to trigger Tor launch', 'error');
+    }
+  };
+
+  if (el.btnLaunchTor) el.btnLaunchTor.addEventListener('click', handleLaunchTor);
+  if (el.btnLaunchTorFromModal) el.btnLaunchTorFromModal.addEventListener('click', handleLaunchTor);
 
   // Run Health Check Button
   el.btnHealthCheck.addEventListener('click', async () => {

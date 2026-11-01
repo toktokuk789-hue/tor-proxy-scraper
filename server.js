@@ -285,6 +285,18 @@ app.post('/api/tor/inject', (req, res) => {
   res.json(result);
 });
 
+// Launch Tor Browser Executable
+app.post('/api/tor/launch', (req, res) => {
+  const torLauncher = require('./torLauncher');
+  const result = torLauncher.openBrowser();
+  if (result.success) {
+    logEvent(`[TOR] 🚀 ${result.message}`);
+  } else {
+    logEvent(`[TOR] ⚠️ ${result.message}`, 'error');
+  }
+  res.json(result);
+});
+
 // Rotator Gateway Control
 app.post('/api/rotator/toggle', (req, res) => {
   const { enable, port = 8899, strategy = 'round-robin' } = req.body;
