@@ -89,7 +89,9 @@ const el = {
   btnSubmitCustom: document.getElementById('btnSubmitCustom'),
 
   // Tor Extras
-  btnLaunchTor: document.getElementById('btnLaunchTor'),
+  btnToggleTorService: document.getElementById('btnToggleTorService'),
+  torPowerText: document.getElementById('torPowerText'),
+  torPowerIcon: document.getElementById('torPowerIcon'),
   btnLaunchTorFromModal: document.getElementById('btnLaunchTorFromModal'),
   btnInjectTor: document.getElementById('btnInjectTor'),
   btnTorHelp: document.getElementById('btnTorHelp'),
@@ -237,6 +239,13 @@ function updateTorUI(tor) {
     el.chkUseTor.disabled = false;
     if (el.btnInjectTor) el.btnInjectTor.disabled = false;
 
+    if (el.torPowerText) el.torPowerText.textContent = 'Stop Tor';
+    if (el.btnToggleTorService) {
+      el.btnToggleTorService.style.background = 'rgba(244, 63, 94, 0.15)';
+      el.btnToggleTorService.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+      el.btnToggleTorService.style.color = '#f43f5e';
+    }
+
     if (el.modalTorDot) el.modalTorDot.style.background = '#10b981';
     if (el.modalTorText) el.modalTorText.textContent = `Connected! ${tor.mode} active on port ${tor.socksPort} (Exit IP: ${tor.currentIp || 'Active'})`;
   } else {
@@ -244,14 +253,21 @@ function updateTorUI(tor) {
     el.torStatusTitle.textContent = 'Tor Offline';
     el.torPortBadge.textContent = 'NO CIRCUIT';
     el.torPortBadge.style.color = '#94a3b8';
-    el.torCurrentIp.textContent = 'Tor Browser closed (Click help to connect)';
+    el.torCurrentIp.textContent = 'Tor daemon offline (Click Start Tor)';
     if (el.chkUseTor.checked) {
       el.chkUseTor.checked = false;
     }
     if (el.btnInjectTor) el.btnInjectTor.disabled = true;
 
+    if (el.torPowerText) el.torPowerText.textContent = 'Start Tor';
+    if (el.btnToggleTorService) {
+      el.btnToggleTorService.style.background = 'rgba(0, 243, 255, 0.15)';
+      el.btnToggleTorService.style.borderColor = 'rgba(0, 243, 255, 0.35)';
+      el.btnToggleTorService.style.color = 'var(--cyan)';
+    }
+
     if (el.modalTorDot) el.modalTorDot.style.background = '#f43f5e';
-    if (el.modalTorText) el.modalTorText.textContent = 'Tor is offline. Please launch Tor Browser on your PC.';
+    if (el.modalTorText) el.modalTorText.textContent = 'Tor is offline. Click "Start Tor" to launch background service.';
   }
 }
 
@@ -541,27 +557,48 @@ function attachEventListeners() {
     });
   }
 
-  // Launch Tor Handlers
+  // Toggle Embedded Tor Background Service
+  const handleToggleTorService = async () => {
+    if (state.tor.connected) {
+      showToast('Stopping Tor service...', 'info');
+      try {
+        const res = await fetch('/api/tor/stop', { method: 'POST' });
+        const data = await res.json();
+        updateTorUI(data.state);
+        showToast(data.message, 'success');
+      } catch (e) {
+        showToast('Error stopping Tor', 'error');
+      }
+    } else {
+      showToast('🚀 Starting Tor daemon on 127.0.0.1:9150...', 'info');
+      if (el.torPowerText) el.torPowerText.textContent = 'Starting...';
+      try {
+        const res = await fetch('/api/tor/start', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          updateTorUI(data.state);
+          showToast(data.message, 'success');
+        } else {
+          showToast(data.message, 'error');
+          if (el.torPowerText) el.torPowerText.textContent = 'Start Tor';
+        }
+      } catch (e) {
+        showToast('Failed to start Tor daemon', 'error');
+        if (el.torPowerText) el.torPowerText.textContent = 'Start Tor';
+      }
+    }
+  };
+
+  if (el.btnToggleTorService) el.btnToggleTorService.addEventListener('click', handleToggleTorService);
+
+  // Launch Tor Browser GUI Handlers
   const handleLaunchTor = async () => {
-    showToast('🚀 Launching Tor Browser...', 'info');
+    showToast('🚀 Launching Tor Browser GUI...', 'info');
     try {
       const res = await fetch('/api/tor/launch', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         showToast(data.message, 'success');
-        // Poll for Tor connection every 2.5s for 20s
-        let attempts = 0;
-        const pollTimer = setInterval(async () => {
-          attempts++;
-          const statusRes = await fetch('/api/tor/status');
-          const statusData = await statusRes.json();
-          updateTorUI(statusData);
-          if (statusData.connected) {
-            clearInterval(pollTimer);
-            showToast(`✓ Tor Connected! Exit IP: ${statusData.currentIp}`, 'success');
-          }
-          if (attempts >= 8) clearInterval(pollTimer);
-        }, 2500);
       } else {
         showToast(data.message, 'error');
       }
@@ -570,7 +607,6 @@ function attachEventListeners() {
     }
   };
 
-  if (el.btnLaunchTor) el.btnLaunchTor.addEventListener('click', handleLaunchTor);
   if (el.btnLaunchTorFromModal) el.btnLaunchTorFromModal.addEventListener('click', handleLaunchTor);
 
   // Run Health Check Button

@@ -285,6 +285,23 @@ app.post('/api/tor/inject', (req, res) => {
   res.json(result);
 });
 
+// Start Background Tor Daemon
+app.post('/api/tor/start', async (req, res) => {
+  logEvent('[TOR] Requesting Tor Service Start...');
+  const result = await torManager.startTorService((msg) => logEvent(msg));
+  const state = torManager.getState();
+  broadcastSSE('tor-status', state);
+  res.json({ ...result, state });
+});
+
+// Stop Background Tor Daemon
+app.post('/api/tor/stop', async (req, res) => {
+  const result = await torManager.stopTorService((msg) => logEvent(msg));
+  const state = torManager.getState();
+  broadcastSSE('tor-status', state);
+  res.json({ ...result, state });
+});
+
 // Launch Tor Browser Executable
 app.post('/api/tor/launch', (req, res) => {
   const torLauncher = require('./torLauncher');
@@ -350,8 +367,13 @@ const server = app.listen(PORT, async () => {
   console.log(`🚀 TOR PULSE Dashboard running on http://localhost:${PORT}`);
   console.log(`======================================================\n`);
 
-  // Probe Tor initially
-  await torManager.checkStatus();
   // Start Rotator server by default
   rotatorServer.start(8899);
+
+  // Probe Tor initially
+  const initialStatus = await torManager.checkStatus();
+  if (!initialStatus.connected && torManager.findTorExe()) {
+    logEvent('[TOR] Auto-launching local Tor background service...');
+    await torManager.startTorService((msg) => logEvent(msg));
+  }
 });
